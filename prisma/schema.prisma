@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat    = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  posts        Post[]
+  reactions    Reaction[]
+  comments     Comment[]
+
+  @@map("users")
+}
+
+model Subject {
+  id   Int    @id @default(autoincrement())
+  name String
+  slug String @unique
+
+  posts Post[]
+
+  @@map("subjects")
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Post {
+  id          Int        @id @default(autoincrement())
+  title       String     @db.VarChar(200)
+  content     String
+  status      PostStatus @default(DRAFT)
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  publishedAt DateTime?
+
+  subjectId   Int
+  authorId    Int
+
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+
+  reactions   Reaction[]
+  comments    Comment[]
+
+  @@index([authorId])
+  @@index([subjectId])
+  @@index([status])
+  
+  @@map("posts")
+}
+
+enum ReactionType {
+  LIKE
+}
+
+model Reaction {
+  id     Int          @id @default(autoincrement())
+  type   ReactionType
+  date   DateTime     @default(now())
+  
+  userId Int
+  postId Int
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post   Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([postId])
+  @@index([date])
+  @@index([type])
+
+  @@unique([postId, userId])
+
+  @@map("reactions")
+}
+
+model Comment {
+  id       Int       @id @default(autoincrement())
+  content  String
+  date     DateTime  @default(now())
+
+  userId   Int
+  postId   Int
+  parentId Int?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+
+  replies  Comment[] @relation("Replies")
+
+  @@index([userId])
+  @@index([postId])
+  @@index([date])
+
+  @@map("comments")
+}

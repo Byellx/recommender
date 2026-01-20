@@ -1,0 +1,1793 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+.prettierrc
+eslint.config.mjs
+nest-cli.json
+package.json
+prisma.config.ts
+prisma/migrations/20260110012525_init/migration.sql
+prisma/migrations/20260113010633_init/migration.sql
+prisma/migrations/20260113030745_add_slug_subject/migration.sql
+prisma/migrations/20260115021935_v2/migration.sql
+prisma/migrations/20260116163808_add_reactions/migration.sql
+prisma/migrations/20260116165626_add_constraint/migration.sql
+prisma/migrations/20260118194907_add_comments/migration.sql
+prisma/migrations/20260120004442_add_comment_replies/migration.sql
+prisma/migrations/migration_lock.toml
+prisma/schema.prisma
+README.md
+src/app.controller.ts
+src/app.module.ts
+src/app.service.ts
+src/auth/auth.controller.ts
+src/auth/auth.module.ts
+src/auth/auth.service.ts
+src/auth/jwt.strategy.ts
+src/comment/comment.controller.ts
+src/comment/comment.module.ts
+src/comment/comment.service.ts
+src/main.ts
+src/post/create-post.dto.ts
+src/post/post.controller.ts
+src/post/post.module.ts
+src/post/post.service.ts
+src/post/update-post.dto.ts
+src/prisma/prisma.module.ts
+src/prisma/prisma.service.ts
+src/reaction/create-reaction.dto.ts
+src/reaction/reaction.controller.ts
+src/reaction/reaction.module.ts
+src/reaction/reaction.service.ts
+src/subject/subject.controller.ts
+src/subject/subject.module.ts
+src/subject/subject.service.ts
+src/users/create-users.dto.ts
+src/users/users.controller.ts
+src/users/users.module.ts
+src/users/users.service.ts
+test/app.e2e-spec.ts
+test/jest-e2e.json
+tsconfig.build.json
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".gitignore">
+# compiled output
+/dist
+/node_modules
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+/generated/prisma
+</file>
+
+<file path=".prettierrc">
+{
+  "singleQuote": true,
+  "trailingComma": "all"
+}
+</file>
+
+<file path="eslint.config.mjs">
+// @ts-check
+import eslint from '@eslint/js';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  {
+    ignores: ['eslint.config.mjs'],
+  },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  eslintPluginPrettierRecommended,
+  {
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
+      sourceType: 'commonjs',
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      "prettier/prettier": ["error", { endOfLine: "auto" }],
+    },
+  },
+);
+</file>
+
+<file path="nest-cli.json">
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true
+  }
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "recommend",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.0.1",
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "bcrypt": "^6.0.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.3",
+    "dotenv": "^17.2.3",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.18.0",
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.0.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.10.7",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/supertest": "^6.0.2",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^16.0.0",
+    "jest": "^30.0.0",
+    "prettier": "^3.4.2",
+    "prisma": "^7.2.0",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.20.0"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
+  }
+}
+</file>
+
+<file path="prisma.config.ts">
+// This file was generated by Prisma, and assumes you have installed the following:
+// npm install --save-dev prisma dotenv
+import "dotenv/config";
+import { defineConfig } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+  },
+  datasource: {
+    url: process.env["DATABASE_URL"],
+  },
+});
+</file>
+
+<file path="prisma/migrations/20260110012525_init/migration.sql">
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "username" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+</file>
+
+<file path="prisma/migrations/20260113010633_init/migration.sql">
+/*
+  Warnings:
+
+  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
+
+*/
+-- DropTable
+DROP TABLE "User";
+
+-- CreateTable
+CREATE TABLE "users" (
+    "id" SERIAL NOT NULL,
+    "username" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "subjects" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+
+    CONSTRAINT "subjects_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "posts" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "subjectId" INTEGER NOT NULL,
+    "authorId" INTEGER NOT NULL,
+
+    CONSTRAINT "posts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "subjects_name_key" ON "subjects"("name");
+
+-- AddForeignKey
+ALTER TABLE "posts" ADD CONSTRAINT "posts_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "posts" ADD CONSTRAINT "posts_subjectId_fkey" FOREIGN KEY ("subjectId") REFERENCES "subjects"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/20260113030745_add_slug_subject/migration.sql">
+/*
+  Warnings:
+
+  - A unique constraint covering the columns `[slug]` on the table `subjects` will be added. If there are existing duplicate values, this will fail.
+  - Added the required column `slug` to the `subjects` table without a default value. This is not possible if the table is not empty.
+
+*/
+-- DropIndex
+DROP INDEX "subjects_name_key";
+
+-- AlterTable
+ALTER TABLE "subjects" ADD COLUMN     "slug" TEXT NOT NULL;
+
+-- CreateIndex
+CREATE UNIQUE INDEX "subjects_slug_key" ON "subjects"("slug");
+</file>
+
+<file path="prisma/migrations/20260115021935_v2/migration.sql">
+/*
+  Warnings:
+
+  - You are about to drop the column `description` on the `posts` table. All the data in the column will be lost.
+  - You are about to alter the column `title` on the `posts` table. The data in that column could be lost. The data in that column will be cast from `Text` to `VarChar(200)`.
+  - Added the required column `content` to the `posts` table without a default value. This is not possible if the table is not empty.
+  - Added the required column `updatedAt` to the `posts` table without a default value. This is not possible if the table is not empty.
+
+*/
+-- CreateEnum
+CREATE TYPE "PostStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
+
+-- DropForeignKey
+ALTER TABLE "posts" DROP CONSTRAINT "posts_authorId_fkey";
+
+-- AlterTable
+ALTER TABLE "posts" DROP COLUMN "description",
+ADD COLUMN     "content" TEXT NOT NULL,
+ADD COLUMN     "publishedAt" TIMESTAMP(3),
+ADD COLUMN     "status" "PostStatus" NOT NULL DEFAULT 'DRAFT',
+ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL,
+ALTER COLUMN "title" SET DATA TYPE VARCHAR(200);
+
+-- CreateIndex
+CREATE INDEX "posts_authorId_idx" ON "posts"("authorId");
+
+-- CreateIndex
+CREATE INDEX "posts_subjectId_idx" ON "posts"("subjectId");
+
+-- CreateIndex
+CREATE INDEX "posts_status_idx" ON "posts"("status");
+
+-- AddForeignKey
+ALTER TABLE "posts" ADD CONSTRAINT "posts_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/20260116163808_add_reactions/migration.sql">
+-- CreateEnum
+CREATE TYPE "ReactionType" AS ENUM ('LIKE');
+
+-- CreateTable
+CREATE TABLE "reactions" (
+    "id" SERIAL NOT NULL,
+    "type" "ReactionType" NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" INTEGER NOT NULL,
+    "postId" INTEGER NOT NULL,
+
+    CONSTRAINT "reactions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "reactions_userId_idx" ON "reactions"("userId");
+
+-- CreateIndex
+CREATE INDEX "reactions_postId_idx" ON "reactions"("postId");
+
+-- CreateIndex
+CREATE INDEX "reactions_date_idx" ON "reactions"("date");
+
+-- CreateIndex
+CREATE INDEX "reactions_type_idx" ON "reactions"("type");
+
+-- AddForeignKey
+ALTER TABLE "reactions" ADD CONSTRAINT "reactions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reactions" ADD CONSTRAINT "reactions_postId_fkey" FOREIGN KEY ("postId") REFERENCES "posts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/20260116165626_add_constraint/migration.sql">
+/*
+  Warnings:
+
+  - A unique constraint covering the columns `[postId,userId]` on the table `reactions` will be added. If there are existing duplicate values, this will fail.
+
+*/
+-- CreateIndex
+CREATE UNIQUE INDEX "reactions_postId_userId_key" ON "reactions"("postId", "userId");
+</file>
+
+<file path="prisma/migrations/20260118194907_add_comments/migration.sql">
+-- CreateTable
+CREATE TABLE "comments" (
+    "id" SERIAL NOT NULL,
+    "content" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" INTEGER NOT NULL,
+    "postId" INTEGER NOT NULL,
+
+    CONSTRAINT "comments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "comments_userId_idx" ON "comments"("userId");
+
+-- CreateIndex
+CREATE INDEX "comments_postId_idx" ON "comments"("postId");
+
+-- CreateIndex
+CREATE INDEX "comments_date_idx" ON "comments"("date");
+
+-- AddForeignKey
+ALTER TABLE "comments" ADD CONSTRAINT "comments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "comments" ADD CONSTRAINT "comments_postId_fkey" FOREIGN KEY ("postId") REFERENCES "posts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/20260120004442_add_comment_replies/migration.sql">
+-- AlterTable
+ALTER TABLE "comments" ADD COLUMN     "parentId" INTEGER;
+
+-- AddForeignKey
+ALTER TABLE "comments" ADD CONSTRAINT "comments_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "comments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="prisma/migrations/migration_lock.toml">
+# Please do not edit this file manually
+# It should be added in your version-control system (e.g., Git)
+provider = "postgresql"
+</file>
+
+<file path="prisma/schema.prisma">
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat    = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  posts        Post[]
+  reactions    Reaction[]
+  comments     Comment[]
+
+  @@map("users")
+}
+
+model Subject {
+  id   Int    @id @default(autoincrement())
+  name String
+  slug String @unique
+
+  posts Post[]
+
+  @@map("subjects")
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Post {
+  id          Int        @id @default(autoincrement())
+  title       String     @db.VarChar(200)
+  content     String
+  status      PostStatus @default(DRAFT)
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  publishedAt DateTime?
+
+  subjectId   Int
+  authorId    Int
+
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+
+  reactions   Reaction[]
+  comments    Comment[]
+
+  @@index([authorId])
+  @@index([subjectId])
+  @@index([status])
+  
+  @@map("posts")
+}
+
+enum ReactionType {
+  LIKE
+}
+
+model Reaction {
+  id     Int          @id @default(autoincrement())
+  type   ReactionType
+  date   DateTime     @default(now())
+  
+  userId Int
+  postId Int
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post   Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([postId])
+  @@index([date])
+  @@index([type])
+
+  @@unique([postId, userId])
+
+  @@map("reactions")
+}
+
+model Comment {
+  id       Int       @id @default(autoincrement())
+  content  String
+  date     DateTime  @default(now())
+
+  userId   Int
+  postId   Int
+  parentId Int?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+
+  replies  Comment[] @relation("Replies")
+
+  @@index([userId])
+  @@index([postId])
+  @@index([date])
+
+  @@map("comments")
+}
+</file>
+
+<file path="README.md">
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
+
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
+
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+
+## Description
+
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+
+## Project setup
+
+```bash
+$ npm install
+```
+
+## Compile and run the project
+
+```bash
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
+```
+
+## Run tests
+
+```bash
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
+```
+
+## Deployment
+
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+
+```bash
+$ npm install -g @nestjs/mau
+$ mau deploy
+```
+
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+
+## Resources
+
+Check out a few resources that may come in handy when working with NestJS:
+
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+
+## Support
+
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+## Stay in touch
+
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+</file>
+
+<file path="src/app.controller.ts">
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get()
+  getHello(): string {
+    return this.appService.getHello();
+  }
+}
+</file>
+
+<file path="src/app.module.ts">
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './auth/auth.module';
+import { ConfigModule } from '@nestjs/config';
+import { SubjectModule } from './subject/subject.module';
+import { PostModule } from './post/post.module';
+import { ReactionModule } from './reaction/reaction.module';
+import { CommentModule } from './comment/comment.module';
+
+@Module({
+  imports: [UsersModule, PrismaModule, AuthModule, ConfigModule.forRoot({
+    isGlobal: true
+  }), SubjectModule, PostModule, ReactionModule, CommentModule],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+</file>
+
+<file path="src/app.service.ts">
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class AppService {
+  getHello(): string {
+    return 'Hello World!';
+  }
+}
+</file>
+
+<file path="src/auth/auth.controller.ts">
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { AuthGuard } from '@nestjs/passport';
+
+@Controller('auth')
+export class AuthController {
+    constructor(private readonly authService: AuthService) {}
+
+    @Post('login')
+    login(@Body() body: {email: string, password: string}) {
+        return this.authService.login(body.email, body.password);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('me')
+    getMe(@Req() req: any) {
+        return req.user;
+    }
+
+}
+</file>
+
+<file path="src/auth/auth.module.ts">
+import { Module } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config'
+import { StringValue } from 'ms'
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './jwt.strategy';
+
+@Module({
+  imports: [
+    PassportModule,
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: async(configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get<StringValue>('JWT_EXPIRES_IN')
+        }
+      })
+    })
+  ],
+  providers: [AuthService, JwtStrategy],
+  controllers: [AuthController]
+})
+export class AuthModule {}
+</file>
+
+<file path="src/auth/auth.service.ts">
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt'
+import * as bcrypt from 'bcrypt'
+
+@Injectable()
+export class AuthService {
+    constructor(
+        private readonly prismaService: PrismaService,
+        private readonly jwtService: JwtService
+    ) {}
+
+    async login(email: string, password: string) {
+        const user = await this.prismaService.prisma.user.findUnique(
+            {
+                where: { email }
+            }
+        );
+
+        if(!user) {
+            throw new UnauthorizedException('Credenciais inválidas.');
+        }
+
+        const passwordValid = await bcrypt.compare(
+            password,
+            user.passwordHash
+        );
+
+        if(!passwordValid) {
+            throw new UnauthorizedException('Credenciais inválidas.');
+        }
+
+        const payload = {
+            sub: user.id,
+            username: user.username
+        };
+
+        return {
+            access_token: this.jwtService.sign(payload)
+        };
+    }
+}
+</file>
+
+<file path="src/auth/jwt.strategy.ts">
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport"
+import { ExtractJwt, Strategy } from "passport-jwt"
+import { ConfigService } from "@nestjs/config"
+import { PrismaService } from "src/prisma/prisma.service";
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+    constructor(
+        configService: ConfigService,
+        private prismaService: PrismaService
+    ) {
+        super({
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            ignoreExpiration: false,
+            secretOrKey: configService.get<string>('JWT_SECRET') || ''
+        });
+    }
+
+    async validate(payload: any) {
+        const user = await this.prismaService.prisma.user.findUnique(
+            {
+                where: {
+                    id: payload.sub
+                },
+                select: {
+                    id: true,
+                    username: true,
+                    email: true,
+                    createdAt: true
+                }
+            }
+        );
+
+        if(!user) {
+            throw new UnauthorizedException('Este usuário não existe.');
+        }
+
+        return user;
+    }
+}
+</file>
+
+<file path="src/comment/comment.controller.ts">
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { CommentService } from './comment.service';
+import { AuthGuard } from '@nestjs/passport';
+
+@Controller('comment')
+export class CommentController {
+    constructor(private readonly commentService: CommentService) {}
+
+    @UseGuards(AuthGuard("jwt"))
+    @Post(":postId")
+    comment(
+        @Param("postId", ParseIntPipe) postId: number,
+        @Body() comment: string,
+        @Req() req: any
+    ) {
+        return this.commentService.comment(req.user.id, postId, comment);
+    }
+
+    @UseGuards(AuthGuard("jwt"))
+    @Get(":postId")
+    findByPost(
+        @Param("postId", ParseIntPipe) postId: number
+    ){
+        return this.commentService.findByPost(postId);
+    }
+    
+    @UseGuards(AuthGuard("jwt"))
+    @Put(":commentId")
+    update(
+        @Param("commentId", ParseIntPipe) commentId: number,
+        @Body() content: string,
+        @Req() req: any
+    ){
+        return this.commentService.update(commentId, content, req.user.id)
+    }
+    
+    @UseGuards(AuthGuard("jwt"))
+    @Delete(":commentId")
+    remove(
+        @Param("commentId", ParseIntPipe) commentId: number,
+        @Req() req: any
+    ){
+        return this.commentService.remove(commentId, req.user.id);
+    }
+}
+</file>
+
+<file path="src/comment/comment.module.ts">
+import { Module } from '@nestjs/common';
+import { CommentService } from './comment.service';
+import { CommentController } from './comment.controller';
+
+@Module({
+  providers: [CommentService],
+  controllers: [CommentController]
+})
+export class CommentModule {}
+</file>
+
+<file path="src/comment/comment.service.ts">
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+@Injectable()
+export class CommentService {
+    constructor(
+        private readonly prismaService: PrismaService
+    ) {}
+
+    async comment(userId: number, postId: number, content: string, parentId?: number) {
+        const user = await this.prismaService.prisma.user.findUnique({
+            where: {
+                id: userId
+            }
+        });
+
+        if(!user) {
+            throw new NotFoundException('O usuário não existe.');
+        }
+
+        const post = await this.prismaService.prisma.post.findUnique({
+            where: {
+                id: postId
+            }
+        });
+
+        if(!post) {
+            throw new NotFoundException('O post não existe.');
+        }
+
+        if(parentId) {
+            const parent = await this.prismaService.prisma.comment.findUnique({
+                where: { id: parentId }
+            });
+
+            if(!parent) throw new NotFoundException("Este comentário não existe.");
+
+            if(!(parent.postId == postId)) throw new BadRequestException("O comentário pai não pertence ao post.");
+        }
+
+        const comment = await this.prismaService.prisma.comment.create({
+            data: {
+                userId: userId,
+                postId: postId,
+                content: content,
+                ...(parentId && { parentId })
+            },
+            select: {
+                user: { select: { username: true }},
+                post: { select: { title: true, content: true }},
+                content: true,
+                date: true
+            }
+        });
+
+        return comment;
+    }
+
+    async findByPost(postId: number) {
+        return this.prismaService.prisma.comment.findMany({
+            where: {
+                postId: postId
+            },
+            select: {
+                post: { select: { title: true, content: true, author: true, publishedAt: true }},
+                content: true,
+                user: { select: { username: true }},
+                date: true
+            }
+        });
+    }
+
+    async update(commentId: number, content: string, userId: number) {
+        const comment = await this.prismaService.prisma.comment.findUnique({
+            where: { id: commentId}
+        });
+
+        if(!comment) throw new NotFoundException("O comentário não existe.");
+
+        const user = await this.prismaService.prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if(!user) throw new NotFoundException("O usuário não existe.");
+
+        if(comment.userId != userId) throw new ForbiddenException("O usuário não pode editar este comentário.");
+
+        const commentUpdated = await this.prismaService.prisma.comment.update({
+            where: { id: commentId },
+            data: { content: content }
+        });
+
+        return commentUpdated;
+
+    }
+
+    async remove(commentId: number, userId: number) {
+        const comment = await this.prismaService.prisma.comment.findUnique({
+            where: { id: commentId}
+        });
+
+        if(!comment) throw new NotFoundException("O comentário não existe.");
+
+        const user = await this.prismaService.prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if(!user) throw new NotFoundException("O usuário não existe.");
+
+        if(comment.userId != userId) throw new ForbiddenException("O usuário não pode deletar o comentário.");
+
+        const commentRemoved = await this.prismaService.prisma.comment.delete({
+            where: { id: commentId }
+        });
+
+        return commentRemoved;
+    }
+}
+</file>
+
+<file path="src/main.ts">
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { SubjectService } from './subject/subject.service';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true
+  }));
+  
+  const subjectService = app.get(SubjectService);
+  await subjectService.seedSubjects();
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+</file>
+
+<file path="src/post/create-post.dto.ts">
+import { IsInt, IsNotEmpty, IsString, Length, Min } from "class-validator"
+
+export class CreatePostDto {
+    @IsNotEmpty()
+    @IsString()
+    @Length(3, 200)
+    title: string
+
+    @IsNotEmpty()
+    @IsString()
+    @Length(3, 1000)
+    content: string
+
+    @IsNotEmpty()
+    @IsInt()
+    @Min(1)
+    subjectId: number
+}
+</file>
+
+<file path="src/post/post.controller.ts">
+import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { PostService } from './post.service';
+import { CreatePostDto } from './create-post.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { UpdatePostDto } from './update-post.dto';
+
+@Controller('posts')
+export class PostController {
+    constructor(private readonly postService: PostService) {}
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post()
+    create(
+        @Body() dto: CreatePostDto,
+        @Req() req
+    ) {
+        return this.postService.create(dto, req.user.id);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Put(":id/publish")
+    publish(
+        @Param('id') id: string,
+        @Body() dto: UpdatePostDto,
+        @Req() req: any
+    ) {
+        return this.postService.publish(
+            Number(id),
+            dto,
+            req.user.id
+        );
+    }
+
+    @Get("feed")
+    findAll(){
+        return this.postService.feed();
+    }
+
+    @UseGuards(AuthGuard("jwt"))
+    @Get("feed/me")
+    findAllbyMe(@Req() req: any){
+        return this.postService.feed(req.user.id);
+    }
+}
+</file>
+
+<file path="src/post/post.module.ts">
+import { Module } from '@nestjs/common';
+import { PostService } from './post.service';
+import { PostController } from './post.controller';
+
+@Module({
+  providers: [PostService],
+  controllers: [PostController]
+})
+export class PostModule {}
+</file>
+
+<file path="src/post/post.service.ts">
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreatePostDto } from './create-post.dto';
+import { UpdatePostDto } from './update-post.dto';
+import { Post, PostStatus } from 'generated/prisma/client';
+
+@Injectable()
+export class PostService {
+    constructor(
+        private readonly prismaService: PrismaService
+    ) {}
+
+    async create(dto: CreatePostDto, authorId: number) {
+        const author = await this.prismaService.prisma.user.findUnique({
+            where: {
+                id: authorId
+            }
+        });
+
+        if(!author) {
+            throw new NotFoundException('O autor do post não foi encontrado.');
+        }
+
+        const subject = await this.prismaService.prisma.subject.findUnique({
+            where: {
+                id: dto.subjectId
+            }
+        });
+
+        if(!subject) {
+            throw new NotFoundException('O assunto do post não existe.');
+        }
+
+        const post = await this.prismaService.prisma.post.create({
+            data: {
+                title: dto.title,
+                content: dto.content,
+                authorId: authorId,
+                subjectId: dto.subjectId
+            }
+        });
+
+        return post;
+    }
+
+    async publish(postId: number, dto: UpdatePostDto, userId: number) {
+        const post = await this.prismaService.prisma.post.findUnique({
+            where: {
+                id: postId
+            }
+        });
+
+        if(!post) {
+            throw new NotFoundException('O post não foi encontrado.');
+        }
+
+        const user = await this.prismaService.prisma.user.findUnique({
+            where: {
+                id: userId
+            }
+        });
+
+        if(!user) {
+            throw new NotFoundException('O usuário não foi encontrado.');
+        }
+
+        if(!(post.authorId == userId)) {
+            throw new ForbiddenException('O usuário não pode publicar este post.');
+        }
+
+        const publishedAt: Date = new Date(Date.now());
+
+        const postPublished = await this.prismaService.prisma.post.update({
+            where: {
+                id: postId
+            },
+            data: {
+                publishedAt: publishedAt,
+                status: dto.status
+            }
+        });
+
+        return postPublished;
+    }
+
+    async feed(userId?: number){
+        if(userId){
+            const user = await this.prismaService.prisma.user.findUnique({
+                where: {
+                    id: userId
+                }
+            });
+
+            if(!user){
+                throw new NotFoundException('O usuário não existe.');
+            }
+        }
+
+        const feed = await this.prismaService.prisma.post.findMany({
+            where: {
+                status: PostStatus.PUBLISHED
+            },
+            orderBy: {
+                publishedAt: 'desc'
+            },
+            select: {
+                title: true,
+                content: true,
+                publishedAt: true,
+                status: true,
+                author: {
+                    select: {
+                        username: true
+                    }
+                },
+                subject: {
+                    select: {
+                        name: true
+                    }
+                }
+            }
+        });
+
+        return feed;
+    }
+}
+</file>
+
+<file path="src/post/update-post.dto.ts">
+import { IsNotEmpty } from "class-validator";
+import { PostStatus } from "generated/prisma/enums";
+
+export class UpdatePostDto {
+    @IsNotEmpty()
+    status: PostStatus
+}
+</file>
+
+<file path="src/prisma/prisma.module.ts">
+import { Global, Module } from '@nestjs/common';
+import { PrismaService } from './prisma.service';
+
+@Global()
+@Module({
+  providers: [PrismaService],
+  exports: [PrismaService],
+})
+export class PrismaModule {}
+</file>
+
+<file path="src/prisma/prisma.service.ts">
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import 'dotenv/config';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from 'generated/prisma/client';
+
+@Injectable()
+export class PrismaService implements OnModuleInit {
+    public prisma: PrismaClient
+    
+    constructor(){
+        const connectionString = process.env.DATABASE_URL!;
+        const adapter = new PrismaPg({connectionString});
+        
+        this.prisma = new PrismaClient({adapter});
+    }
+
+    async onModuleInit() {
+        await this.prisma.$connect()
+    }
+}
+</file>
+
+<file path="src/reaction/create-reaction.dto.ts">
+import { IsEnum, IsNotEmpty } from "class-validator";
+import { ReactionType } from "generated/prisma/enums";
+
+export class CreateReactionDto {
+    @IsNotEmpty()
+    @IsEnum(ReactionType)
+    type: ReactionType
+}
+</file>
+
+<file path="src/reaction/reaction.controller.ts">
+import { Body, Controller, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { CreateReactionDto } from './create-reaction.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { ReactionType } from 'generated/prisma/enums';
+import { ReactionService } from './reaction.service';
+
+@Controller('reaction')
+export class ReactionController {
+    constructor(private readonly reactionService: ReactionService) {}
+
+    @UseGuards(AuthGuard("jwt"))
+    @Post(":postId")
+    create(
+        @Param('postId', ParseIntPipe) postId: number,
+        @Body() dto: CreateReactionDto,
+        @Req() req: any
+    ){
+        return this.reactionService.create(req.user.id, postId, dto.type);
+    }
+}
+</file>
+
+<file path="src/reaction/reaction.module.ts">
+import { Module } from '@nestjs/common';
+import { ReactionService } from './reaction.service';
+import { ReactionController } from './reaction.controller';
+
+@Module({
+  providers: [ReactionService],
+  controllers: [ReactionController]
+})
+export class ReactionModule {}
+</file>
+
+<file path="src/reaction/reaction.service.ts">
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { ReactionType } from 'generated/prisma/enums';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+@Injectable()
+export class ReactionService {
+    constructor(
+        private readonly prismaService: PrismaService
+    ) {}
+
+    async create(userId: number, postId: number, type: ReactionType) {
+        const user = await this.prismaService.prisma.user.findUnique({
+            where: {
+                id: userId
+            }
+        });
+
+        if(!user) {
+            throw new NotFoundException('O usuário não existe.');
+        }
+
+        const post = await this.prismaService.prisma.post.findUnique({
+            where: {
+                id: postId
+            }
+        });
+
+        if(!post) {
+            throw new NotFoundException("O post não existe.");
+        }
+
+        const reactionAlreadyExists = await this.prismaService.prisma.reaction.findUnique({
+            where: {
+                postId_userId: {
+                    postId: postId,
+                    userId: userId
+                }
+            }
+        });
+
+        if(reactionAlreadyExists) {
+            const reactionRemoved = await this.prismaService.prisma.reaction.delete({
+                where: {
+                    postId_userId: {
+                        postId: postId,
+                        userId: userId
+                    }
+                }
+            });
+
+            return {
+                operation: "UNLIKE",
+                reaction: reactionRemoved
+            };
+        }
+
+        const reaction = await this.prismaService.prisma.reaction.create({
+            data: {
+                type: type,
+                userId: userId,
+                postId: postId
+            }
+        });
+
+        return {
+            operation: "LIKE",
+            reaction: reaction
+        }
+    }
+}
+</file>
+
+<file path="src/subject/subject.controller.ts">
+import { Body, Controller, Post } from '@nestjs/common';
+import { SubjectService } from './subject.service';
+
+@Controller('subjects')
+export class SubjectController {
+    constructor(private readonly subjectService: SubjectService) {}
+}
+</file>
+
+<file path="src/subject/subject.module.ts">
+import { Module } from '@nestjs/common';
+import { SubjectService } from './subject.service';
+import { SubjectController } from './subject.controller';
+
+@Module({
+  providers: [SubjectService],
+  controllers: [SubjectController]
+})
+export class SubjectModule {}
+</file>
+
+<file path="src/subject/subject.service.ts">
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+@Injectable()
+export class SubjectService {
+    constructor(private readonly prismaService: PrismaService) {}
+
+    async seedSubjects() {
+        const SUBJECTS = [
+            {
+                name: 'Entretenimento',
+                slug: 'entertainment'
+            },
+            {
+                name: 'Finanças',
+                slug: 'finances'
+            },
+            {
+                name: 'Saúde',
+                slug: 'health'
+            },
+            {
+                name: 'Estilo de vida',
+                slug: 'lifestyle'
+            },
+            {
+                name: 'Notícias',
+                slug: 'news'
+            },
+            {
+                name: 'Política',
+                slug: 'politics'
+            },
+            {
+                name: 'Religião',
+                slug: 'religion'
+            },
+            {
+                name: 'Ciência',
+                slug: 'science'
+            },
+            {
+                name: 'Tecnologia',
+                slug: 'technology'
+            },
+            {
+                name: 'Educação',
+                slug: 'education'
+            }
+        ]
+
+        for(const subject of SUBJECTS) {
+            await this.prismaService.prisma.subject.upsert({
+                where: { slug: subject.slug },
+                update: { name: subject.name},
+                create: subject
+            });
+        }
+    }
+}
+</file>
+
+<file path="src/users/create-users.dto.ts">
+import { IsEmail, IsNotEmpty, IsString, Length, Matches } from "class-validator";
+
+export class CreateUsersDto {
+    @IsString()
+    @IsNotEmpty()
+    @Length(3, 20)
+    @Matches(/^(?![._])[a-z0-9._]+(?<![._])$/, {
+        message: 'Username must be 3–20 characters, lowercase letters, numbers, dot or underscore, and cannot start or end with dot or underscore',
+    })
+    username: string;
+
+    @IsEmail()
+    @IsNotEmpty()
+    email: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @Length(8, 64)
+    @Matches(/^(?!\s)(?!.*\s$)[\p{L}\p{N}\p{P}\p{S}\s]+$/u, {
+        message: 'Password must not start or end with spaces and must contain valid characters',
+    })
+    password: string;
+}
+</file>
+
+<file path="src/users/users.controller.ts">
+import { Body, Controller, Post } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { CreateUsersDto } from './create-users.dto';
+
+@Controller('users')
+export class UsersController {
+    constructor(private readonly usersService: UsersService) {}
+
+    @Post()
+    create(@Body() dto: CreateUsersDto) {
+        return this.usersService.create(dto);
+    }
+}
+</file>
+
+<file path="src/users/users.module.ts">
+import { Module } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
+
+@Module({
+  providers: [UsersService],
+  controllers: [UsersController]
+})
+export class UsersModule {}
+</file>
+
+<file path="src/users/users.service.ts">
+import { ConflictException, Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import { CreateUsersDto } from './create-users.dto';
+
+@Injectable()
+export class UsersService {
+    constructor(private readonly prismaService: PrismaService) {}
+
+    async create(dto: CreateUsersDto) {
+
+        const usernameExists = await this.prismaService.prisma.user.findUnique({
+            where: {
+                username: dto.username
+            }
+        });
+
+        if(usernameExists) {
+            throw new ConflictException('Este nome de usuário já está cadastrado.');
+        }
+
+        const emailExists = await this.prismaService.prisma.user.findUnique({
+            where: {
+                email: dto.email
+            }
+        });
+
+        if(emailExists) {
+            throw new ConflictException('Este endereço de email já está cadastrado.');
+        }
+
+        const passwordHash = await bcrypt.hash(dto.password, 10);
+
+        const user = await this.prismaService.prisma.user.create({
+            data: {
+                username: dto.username,
+                email: dto.email.toLowerCase(),
+                passwordHash
+            },
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                createdAt: true
+            }
+        });
+
+        return user;
+    }
+}
+</file>
+
+<file path="test/app.e2e-spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { App } from 'supertest/types';
+import { AppModule } from './../src/app.module';
+
+describe('AppController (e2e)', () => {
+  let app: INestApplication<App>;
+
+  beforeEach(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  it('/ (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/')
+      .expect(200)
+      .expect('Hello World!');
+  });
+});
+</file>
+
+<file path="test/jest-e2e.json">
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  }
+}
+</file>
+
+<file path="tsconfig.build.json">
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false,
+  }
+}
+</file>
+
+</files>
