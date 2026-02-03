@@ -51,8 +51,9 @@ model Post {
   status      PostStatus @default(DRAFT)
   
   createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  updatedAt   DateTime   @updatedAt()
   publishedAt DateTime?
+  archivedAt  DateTime?
 
   subjectId   Int
   authorId    Int

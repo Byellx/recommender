@@ -2,101 +2,182 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDto } from './create-post.dto';
 import { UpdatePostDto } from './update-post.dto';
-import { Post, PostStatus } from 'generated/prisma/client';
+import { PostStatus } from 'generated/prisma/client';
 
 @Injectable()
 export class PostService {
     constructor(
-        private readonly prismaService: PrismaService
+        private readonly prisma: PrismaService
     ) {}
 
+    private async userExists(userId: number) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true }
+        });
+
+        if(!user) throw new NotFoundException(`Usuário não encontrado.`);
+
+        return user;
+    }
+
+    private async postExists(postId: number) {
+        const post = await this.prisma.post.findUnique({
+            where: { id: postId },
+            select: { id: true, authorId: true, status: true }
+        });
+
+        if(!post) throw new NotFoundException(`Post não encontrado.`);
+
+        return post;
+    }
+
+    private async subjectExists(subjectId: number) {
+        const subject = await this.prisma.subject.findUnique({
+            where: { id: subjectId },
+            select: { id: true }
+        });
+
+        if(!subject) throw new NotFoundException(`Assunto não encontrado.`);
+
+        return subject;
+    }
+
+    private assertOwner(authorId: number, userId: number) {
+        if(authorId !== userId) throw new ForbiddenException('O usuário não é o autor do post.');
+    }
+
+    private readonly baseSelect = {
+        title: true,
+        content: true,
+        author: { select: { username: true } },
+        subject: { select: { name: true } },
+        _count: { select: { reactions: true, comments: true } }
+    } as const;
+
+    private readonly ownerSelect = {
+        ...this.baseSelect,
+        status: true,
+        createdAt: true,
+        publishedAt: true,
+        archivedAt: true,
+    } as const;
+
+    private readonly publicSelect = {
+        ...this.baseSelect,
+        publishedAt: true,
+    } as const;
+
     async create(dto: CreatePostDto, authorId: number) {
-        const author = await this.prismaService.prisma.user.findUnique({
-            where: {
-                id: authorId
-            }
-        });
+        await this.userExists(authorId);
+        await this.subjectExists(dto.subjectId);
 
-        if(!author) {
-            throw new NotFoundException('O autor do post não foi encontrado.');
-        }
-
-        const subject = await this.prismaService.prisma.subject.findUnique({
-            where: {
-                id: dto.subjectId
-            }
-        });
-
-        if(!subject) {
-            throw new NotFoundException('O assunto do post não existe.');
-        }
-
-        const post = await this.prismaService.prisma.post.create({
+        return this.prisma.post.create({
             data: {
                 title: dto.title,
                 content: dto.content,
                 authorId: authorId,
                 subjectId: dto.subjectId
-            }
+            },
+            select: this.ownerSelect
         });
-
-        return post;
     }
 
-    async publish(postId: number, dto: UpdatePostDto, userId: number) {
-        const post = await this.prismaService.prisma.post.findUnique({
-            where: {
-                id: postId
-            }
-        });
+    async read(postId: number, userId?: number) {
+        const post = await this.postExists(postId);
 
-        if(!post) {
-            throw new NotFoundException('O post não foi encontrado.');
+        const isOwner = userId != null && userId === post.authorId;
+
+        if(!isOwner) {
+            if(post.status !== PostStatus.PUBLISHED) throw new NotFoundException("Post não encontrado.");
+
+            return this.prisma.post.findUnique({
+                where: { id: postId },
+                select: this.publicSelect
+            });
+        } else {
+            return this.prisma.post.findUnique({
+                where: { id: postId },
+                select: this.ownerSelect
+            });
         }
+    }
 
-        const user = await this.prismaService.prisma.user.findUnique({
-            where: {
-                id: userId
-            }
-        });
+    async update(postId: number, userId: number, dto: UpdatePostDto) {
+        const post = await this.postExists(postId);
 
-        if(!user) {
-            throw new NotFoundException('O usuário não foi encontrado.');
-        }
+        await this.userExists(userId);
 
-        if(!(post.authorId == userId)) {
-            throw new ForbiddenException('O usuário não pode publicar este post.');
-        }
+        this.assertOwner(post.authorId, userId);
 
-        const publishedAt: Date = new Date(Date.now());
+        if(dto.subjectId != null) await this.subjectExists(dto.subjectId);
 
-        const postPublished = await this.prismaService.prisma.post.update({
-            where: {
-                id: postId
-            },
+        return this.prisma.post.update({
+            where: { id: postId },
             data: {
-                publishedAt: publishedAt,
-                status: dto.status
-            }
+                title: dto.title,
+                content: dto.content,
+                subjectId: dto.subjectId
+            },
+            select: this.ownerSelect
         });
+    }
 
-        return postPublished;
+    async publish(postId: number, userId: number) {
+        const post = await this.postExists(postId);
+
+        await this.userExists(userId);
+
+        this.assertOwner(post.authorId, userId);
+
+        if(post.status === PostStatus.PUBLISHED) throw new ForbiddenException(`Essa postagem já está publicada.`);
+
+        return this.prisma.post.update({
+            where: { id: postId },
+            data: {
+                status: PostStatus.PUBLISHED,
+                publishedAt: new Date(),
+                archivedAt: null
+            },
+            select: this.ownerSelect
+        });
+    }
+
+    async archive(postId: number, userId: number) {
+        const post = await this.postExists(postId);
+
+        await this.userExists(userId);
+
+        this.assertOwner(post.authorId, userId);
+
+        if(post.status === PostStatus.ARCHIVED) throw new ForbiddenException(`Essa postagem já está arquivada.`);
+
+        return this.prisma.post.update({
+            where: { id: postId },
+            data: {
+                status: PostStatus.ARCHIVED,
+                archivedAt: new Date()
+            },
+            select: this.ownerSelect
+        });
+    }
+
+    async delete(postId: number, userId: number) {
+        const post = await this.postExists(postId);
+
+        await this.userExists(userId);
+
+        this.assertOwner(post.authorId, userId);
+
+        return this.prisma.post.delete({
+            where: { id: postId }
+        });
     }
 
     async feed(userId?: number){
-        if(userId){
-            const user = await this.prismaService.prisma.user.findUnique({
-                where: {
-                    id: userId
-                }
-            });
+        if(userId) await this.userExists(userId)
 
-            if(!user){
-                throw new NotFoundException('O usuário não existe.');
-            }
-        }
-
-        const feed = await this.prismaService.prisma.post.findMany({
+        return this.prisma.post.findMany({
             where: {
                 status: PostStatus.PUBLISHED
             },
@@ -106,21 +187,21 @@ export class PostService {
             select: {
                 title: true,
                 content: true,
+                author: { select: { username: true }},
+                subject: { select: { name: true }},
                 publishedAt: true,
-                status: true,
-                author: {
+                reactions: userId ? {
+                    where: { userId: userId },
+                    select: { id: true }
+                } : false,
+
+                _count: {
                     select: {
-                        username: true
-                    }
-                },
-                subject: {
-                    select: {
-                        name: true
+                        comments: true,
+                        reactions: true
                     }
                 }
             }
         });
-
-        return feed;
     }
 }

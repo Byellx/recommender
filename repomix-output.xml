@@ -54,6 +54,7 @@ prisma/migrations/20260116163808_add_reactions/migration.sql
 prisma/migrations/20260116165626_add_constraint/migration.sql
 prisma/migrations/20260118194907_add_comments/migration.sql
 prisma/migrations/20260120004442_add_comment_replies/migration.sql
+prisma/migrations/20260124011239_corrections/migration.sql
 prisma/migrations/migration_lock.toml
 prisma/schema.prisma
 README.md
@@ -63,6 +64,7 @@ src/app.service.ts
 src/auth/auth.controller.ts
 src/auth/auth.module.ts
 src/auth/auth.service.ts
+src/auth/guards/optional-jwt-auth.guard.ts
 src/auth/jwt.strategy.ts
 src/comment/comment.controller.ts
 src/comment/comment.module.ts
@@ -86,6 +88,8 @@ src/users/create-users.dto.ts
 src/users/users.controller.ts
 src/users/users.module.ts
 src/users/users.service.ts
+src/utils/decorators/current-user.decorator.ts
+src/utils/types/current-user.type.ts
 test/app.e2e-spec.ts
 test/jest-e2e.json
 tsconfig.build.json
@@ -94,6 +98,63 @@ tsconfig.json
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="prisma/migrations/20260124011239_corrections/migration.sql">
+-- AlterTable
+ALTER TABLE "posts" ADD COLUMN     "archivedAt" TIMESTAMP(3);
+</file>
+
+<file path="src/auth/guards/optional-jwt-auth.guard.ts">
+import { ExecutionContext, Injectable } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+
+@Injectable()
+export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        try {
+            const result = (await super.canActivate(context)) as boolean;
+            return result;
+        } catch {
+            return true;
+        }
+    }
+    
+    handleRequest(
+        err: any,
+        user: any,
+        info: any,
+        context: ExecutionContext,
+        status?: any) {
+        return user ?? null;
+    }
+}
+</file>
+
+<file path="src/utils/decorators/current-user.decorator.ts">
+import { createParamDecorator, ExecutionContext } from "@nestjs/common";
+
+export const CurrentUser = createParamDecorator(
+    (id: number | undefined, ctx: ExecutionContext) => {
+        const request = ctx.switchToHttp().getRequest();
+        const user = request.user;
+
+        if(!user) return null;
+
+        return id ? user[id] : user;
+    }
+)
+</file>
+
+<file path="src/utils/types/current-user.type.ts">
+type CurrentUserType = {
+    id: number,
+    username: string,
+    email: string,
+    createdAt: Date
+}
+
+export default CurrentUserType;
+</file>
 
 <file path=".gitignore">
 # compiled output
@@ -589,8 +650,9 @@ model Post {
   status      PostStatus @default(DRAFT)
   
   createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  updatedAt   DateTime   @updatedAt()
   publishedAt DateTime?
+  archivedAt  DateTime?
 
   subjectId   Int
   authorId    Int
@@ -867,12 +929,12 @@ import * as bcrypt from 'bcrypt'
 @Injectable()
 export class AuthService {
     constructor(
-        private readonly prismaService: PrismaService,
+        private readonly prisma: PrismaService,
         private readonly jwtService: JwtService
     ) {}
 
     async login(email: string, password: string) {
-        const user = await this.prismaService.prisma.user.findUnique(
+        const user = await this.prisma.user.findUnique(
             {
                 where: { email }
             }
@@ -914,7 +976,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(
         configService: ConfigService,
-        private prismaService: PrismaService
+        private prisma: PrismaService
     ) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -924,7 +986,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: any) {
-        const user = await this.prismaService.prisma.user.findUnique(
+        const user = await this.prisma.user.findUnique(
             {
                 where: {
                     id: payload.sub
@@ -1014,11 +1076,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class CommentService {
     constructor(
-        private readonly prismaService: PrismaService
+        private readonly prisma: PrismaService
     ) {}
 
     async comment(userId: number, postId: number, content: string, parentId?: number) {
-        const user = await this.prismaService.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: {
                 id: userId
             }
@@ -1028,7 +1090,7 @@ export class CommentService {
             throw new NotFoundException('O usuário não existe.');
         }
 
-        const post = await this.prismaService.prisma.post.findUnique({
+        const post = await this.prisma.post.findUnique({
             where: {
                 id: postId
             }
@@ -1039,7 +1101,7 @@ export class CommentService {
         }
 
         if(parentId) {
-            const parent = await this.prismaService.prisma.comment.findUnique({
+            const parent = await this.prisma.comment.findUnique({
                 where: { id: parentId }
             });
 
@@ -1048,7 +1110,7 @@ export class CommentService {
             if(!(parent.postId == postId)) throw new BadRequestException("O comentário pai não pertence ao post.");
         }
 
-        const comment = await this.prismaService.prisma.comment.create({
+        const comment = await this.prisma.comment.create({
             data: {
                 userId: userId,
                 postId: postId,
@@ -1067,7 +1129,7 @@ export class CommentService {
     }
 
     async findByPost(postId: number) {
-        return this.prismaService.prisma.comment.findMany({
+        return this.prisma.comment.findMany({
             where: {
                 postId: postId
             },
@@ -1081,13 +1143,13 @@ export class CommentService {
     }
 
     async update(commentId: number, content: string, userId: number) {
-        const comment = await this.prismaService.prisma.comment.findUnique({
+        const comment = await this.prisma.comment.findUnique({
             where: { id: commentId}
         });
 
         if(!comment) throw new NotFoundException("O comentário não existe.");
 
-        const user = await this.prismaService.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: { id: userId }
         });
 
@@ -1095,7 +1157,7 @@ export class CommentService {
 
         if(comment.userId != userId) throw new ForbiddenException("O usuário não pode editar este comentário.");
 
-        const commentUpdated = await this.prismaService.prisma.comment.update({
+        const commentUpdated = await this.prisma.comment.update({
             where: { id: commentId },
             data: { content: content }
         });
@@ -1105,13 +1167,13 @@ export class CommentService {
     }
 
     async remove(commentId: number, userId: number) {
-        const comment = await this.prismaService.prisma.comment.findUnique({
+        const comment = await this.prisma.comment.findUnique({
             where: { id: commentId}
         });
 
         if(!comment) throw new NotFoundException("O comentário não existe.");
 
-        const user = await this.prismaService.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: { id: userId }
         });
 
@@ -1119,7 +1181,7 @@ export class CommentService {
 
         if(comment.userId != userId) throw new ForbiddenException("O usuário não pode deletar o comentário.");
 
-        const commentRemoved = await this.prismaService.prisma.comment.delete({
+        const commentRemoved = await this.prisma.comment.delete({
             where: { id: commentId }
         });
 
@@ -1172,48 +1234,78 @@ export class CreatePostDto {
 </file>
 
 <file path="src/post/post.controller.ts">
-import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './create-post.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { UpdatePostDto } from './update-post.dto';
+import { CurrentUser } from 'src/utils/decorators/current-user.decorator';
+import type CurrentUserType from 'src/utils/types/current-user.type';
+import { OptionalJwtAuthGuard } from 'src/auth/guards/optional-jwt-auth.guard';
 
 @Controller('posts')
 export class PostController {
     constructor(private readonly postService: PostService) {}
 
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard("jwt"))
     @Post()
     create(
         @Body() dto: CreatePostDto,
-        @Req() req
+        @CurrentUser() user: CurrentUserType
     ) {
-        return this.postService.create(dto, req.user.id);
+        return this.postService.create(dto, user.id);
     }
 
-    @UseGuards(AuthGuard('jwt'))
-    @Put(":id/publish")
-    publish(
-        @Param('id') id: string,
-        @Body() dto: UpdatePostDto,
-        @Req() req: any
-    ) {
-        return this.postService.publish(
-            Number(id),
-            dto,
-            req.user.id
-        );
-    }
-
+    @UseGuards(OptionalJwtAuthGuard)
     @Get("feed")
-    findAll(){
-        return this.postService.feed();
+    findAll(@CurrentUser() user?: CurrentUserType){
+        return this.postService.feed(user?.id);
+    }
+
+    @UseGuards(OptionalJwtAuthGuard)
+    @Get(":postId")
+    read(
+        @Param("postId", ParseIntPipe) postId: number,
+        @CurrentUser() user?: CurrentUserType
+    ) {
+        return this.postService.read(postId, user?.id);
     }
 
     @UseGuards(AuthGuard("jwt"))
-    @Get("feed/me")
-    findAllbyMe(@Req() req: any){
-        return this.postService.feed(req.user.id);
+    @Patch(":postId/update")
+    update(
+        @Param("postId", ParseIntPipe) postId: number,
+        @Body()          dto: UpdatePostDto,
+        @CurrentUser()   user: CurrentUserType
+    ) {
+        return this.postService.update(postId, user.id, dto);
+    }
+
+    @UseGuards(AuthGuard("jwt"))
+    @Patch(":postId/publish")
+    publish(
+        @Param("postId", ParseIntPipe) postId: number,
+        @CurrentUser() user: CurrentUserType
+    ) {
+        return this.postService.publish(postId, user.id);
+    }
+
+    @UseGuards(AuthGuard("jwt"))
+    @Patch(":postId/archive")
+    archive(
+        @Param("postId", ParseIntPipe) postId: number,
+        @CurrentUser() user: CurrentUserType
+    ){
+        return this.postService.archive(postId, user.id);
+    }
+
+    @UseGuards(AuthGuard("jwt"))
+    @Delete(":postId")
+    delete(
+        @Param("postId", ParseIntPipe) postId: number,
+        @CurrentUser() user: CurrentUserType
+    ){
+        return this.postService.delete(postId, user.id);
     }
 }
 </file>
@@ -1235,101 +1327,182 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDto } from './create-post.dto';
 import { UpdatePostDto } from './update-post.dto';
-import { Post, PostStatus } from 'generated/prisma/client';
+import { PostStatus } from 'generated/prisma/client';
 
 @Injectable()
 export class PostService {
     constructor(
-        private readonly prismaService: PrismaService
+        private readonly prisma: PrismaService
     ) {}
 
+    private async userExists(userId: number) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true }
+        });
+
+        if(!user) throw new NotFoundException(`Usuário não encontrado.`);
+
+        return user;
+    }
+
+    private async postExists(postId: number) {
+        const post = await this.prisma.post.findUnique({
+            where: { id: postId },
+            select: { id: true, authorId: true, status: true }
+        });
+
+        if(!post) throw new NotFoundException(`Post não encontrado.`);
+
+        return post;
+    }
+
+    private async subjectExists(subjectId: number) {
+        const subject = await this.prisma.subject.findUnique({
+            where: { id: subjectId },
+            select: { id: true }
+        });
+
+        if(!subject) throw new NotFoundException(`Assunto não encontrado.`);
+
+        return subject;
+    }
+
+    private assertOwner(authorId: number, userId: number) {
+        if(authorId !== userId) throw new ForbiddenException('O usuário não é o autor do post.');
+    }
+
+    private readonly baseSelect = {
+        title: true,
+        content: true,
+        author: { select: { username: true } },
+        subject: { select: { name: true } },
+        _count: { select: { reactions: true, comments: true } }
+    } as const;
+
+    private readonly ownerSelect = {
+        ...this.baseSelect,
+        status: true,
+        createdAt: true,
+        publishedAt: true,
+        archivedAt: true,
+    } as const;
+
+    private readonly publicSelect = {
+        ...this.baseSelect,
+        publishedAt: true,
+    } as const;
+
     async create(dto: CreatePostDto, authorId: number) {
-        const author = await this.prismaService.prisma.user.findUnique({
-            where: {
-                id: authorId
-            }
-        });
+        await this.userExists(authorId);
+        await this.subjectExists(dto.subjectId);
 
-        if(!author) {
-            throw new NotFoundException('O autor do post não foi encontrado.');
-        }
-
-        const subject = await this.prismaService.prisma.subject.findUnique({
-            where: {
-                id: dto.subjectId
-            }
-        });
-
-        if(!subject) {
-            throw new NotFoundException('O assunto do post não existe.');
-        }
-
-        const post = await this.prismaService.prisma.post.create({
+        return this.prisma.post.create({
             data: {
                 title: dto.title,
                 content: dto.content,
                 authorId: authorId,
                 subjectId: dto.subjectId
-            }
+            },
+            select: this.ownerSelect
         });
-
-        return post;
     }
 
-    async publish(postId: number, dto: UpdatePostDto, userId: number) {
-        const post = await this.prismaService.prisma.post.findUnique({
-            where: {
-                id: postId
-            }
-        });
+    async read(postId: number, userId?: number) {
+        const post = await this.postExists(postId);
 
-        if(!post) {
-            throw new NotFoundException('O post não foi encontrado.');
+        const isOwner = userId != null && userId === post.authorId;
+
+        if(!isOwner) {
+            if(post.status !== PostStatus.PUBLISHED) throw new NotFoundException("Post não encontrado.");
+
+            return this.prisma.post.findUnique({
+                where: { id: postId },
+                select: this.publicSelect
+            });
+        } else {
+            return this.prisma.post.findUnique({
+                where: { id: postId },
+                select: this.ownerSelect
+            });
         }
+    }
 
-        const user = await this.prismaService.prisma.user.findUnique({
-            where: {
-                id: userId
-            }
-        });
+    async update(postId: number, userId: number, dto: UpdatePostDto) {
+        const post = await this.postExists(postId);
 
-        if(!user) {
-            throw new NotFoundException('O usuário não foi encontrado.');
-        }
+        await this.userExists(userId);
 
-        if(!(post.authorId == userId)) {
-            throw new ForbiddenException('O usuário não pode publicar este post.');
-        }
+        this.assertOwner(post.authorId, userId);
 
-        const publishedAt: Date = new Date(Date.now());
+        if(dto.subjectId != null) await this.subjectExists(dto.subjectId);
 
-        const postPublished = await this.prismaService.prisma.post.update({
-            where: {
-                id: postId
-            },
+        return this.prisma.post.update({
+            where: { id: postId },
             data: {
-                publishedAt: publishedAt,
-                status: dto.status
-            }
+                title: dto.title,
+                content: dto.content,
+                subjectId: dto.subjectId
+            },
+            select: this.ownerSelect
         });
+    }
 
-        return postPublished;
+    async publish(postId: number, userId: number) {
+        const post = await this.postExists(postId);
+
+        await this.userExists(userId);
+
+        this.assertOwner(post.authorId, userId);
+
+        if(post.status === PostStatus.PUBLISHED) throw new ForbiddenException(`Essa postagem já está publicada.`);
+
+        return this.prisma.post.update({
+            where: { id: postId },
+            data: {
+                status: PostStatus.PUBLISHED,
+                publishedAt: new Date(),
+                archivedAt: null
+            },
+            select: this.ownerSelect
+        });
+    }
+
+    async archive(postId: number, userId: number) {
+        const post = await this.postExists(postId);
+
+        await this.userExists(userId);
+
+        this.assertOwner(post.authorId, userId);
+
+        if(post.status === PostStatus.ARCHIVED) throw new ForbiddenException(`Essa postagem já está arquivada.`);
+
+        return this.prisma.post.update({
+            where: { id: postId },
+            data: {
+                status: PostStatus.ARCHIVED,
+                archivedAt: new Date()
+            },
+            select: this.ownerSelect
+        });
+    }
+
+    async delete(postId: number, userId: number) {
+        const post = await this.postExists(postId);
+
+        await this.userExists(userId);
+
+        this.assertOwner(post.authorId, userId);
+
+        return this.prisma.post.delete({
+            where: { id: postId }
+        });
     }
 
     async feed(userId?: number){
-        if(userId){
-            const user = await this.prismaService.prisma.user.findUnique({
-                where: {
-                    id: userId
-                }
-            });
+        if(userId) await this.userExists(userId)
 
-            if(!user){
-                throw new NotFoundException('O usuário não existe.');
-            }
-        }
-
-        const feed = await this.prismaService.prisma.post.findMany({
+        return this.prisma.post.findMany({
             where: {
                 status: PostStatus.PUBLISHED
             },
@@ -1339,31 +1512,52 @@ export class PostService {
             select: {
                 title: true,
                 content: true,
+                author: { select: { username: true }},
+                subject: { select: { name: true }},
                 publishedAt: true,
-                status: true,
-                author: {
+                reactions: userId ? {
+                    where: { userId: userId },
+                    select: { id: true }
+                } : false,
+
+                _count: {
                     select: {
-                        username: true
-                    }
-                },
-                subject: {
-                    select: {
-                        name: true
+                        comments: true,
+                        reactions: true
                     }
                 }
             }
         });
-
-        return feed;
     }
 }
 </file>
 
 <file path="src/post/update-post.dto.ts">
-import { IsNotEmpty } from "class-validator";
+import { 
+    IsNotEmpty,
+    IsString,
+    Length,
+    IsInt,
+    Min,
+} from "class-validator";
 import { PostStatus } from "generated/prisma/enums";
 
 export class UpdatePostDto {
+    @IsNotEmpty()
+    @IsString()
+    @Length(3, 200)
+    title: string
+
+    @IsNotEmpty()
+    @IsString()
+    @Length(3, 1000)
+    content: string
+
+    @IsNotEmpty()
+    @IsInt()
+    @Min(1)
+    subjectId: number
+    
     @IsNotEmpty()
     status: PostStatus
 }
@@ -1382,24 +1576,30 @@ export class PrismaModule {}
 </file>
 
 <file path="src/prisma/prisma.service.ts">
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from 'generated/prisma/client';
 
 @Injectable()
-export class PrismaService implements OnModuleInit {
+export class PrismaService
+extends PrismaClient
+implements OnModuleInit, OnModuleDestroy {
     public prisma: PrismaClient
     
     constructor(){
         const connectionString = process.env.DATABASE_URL!;
         const adapter = new PrismaPg({connectionString});
         
-        this.prisma = new PrismaClient({adapter});
+        super({adapter});
     }
 
     async onModuleInit() {
         await this.prisma.$connect()
+    }
+
+    async onModuleDestroy() {
+        await this.prisma.$disconnect()
     }
 }
 </file>
@@ -1458,11 +1658,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class ReactionService {
     constructor(
-        private readonly prismaService: PrismaService
+        private readonly prisma: PrismaService
     ) {}
 
     async create(userId: number, postId: number, type: ReactionType) {
-        const user = await this.prismaService.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: {
                 id: userId
             }
@@ -1472,7 +1672,7 @@ export class ReactionService {
             throw new NotFoundException('O usuário não existe.');
         }
 
-        const post = await this.prismaService.prisma.post.findUnique({
+        const post = await this.prisma.post.findUnique({
             where: {
                 id: postId
             }
@@ -1482,7 +1682,7 @@ export class ReactionService {
             throw new NotFoundException("O post não existe.");
         }
 
-        const reactionAlreadyExists = await this.prismaService.prisma.reaction.findUnique({
+        const reactionAlreadyExists = await this.prisma.reaction.findUnique({
             where: {
                 postId_userId: {
                     postId: postId,
@@ -1492,7 +1692,7 @@ export class ReactionService {
         });
 
         if(reactionAlreadyExists) {
-            const reactionRemoved = await this.prismaService.prisma.reaction.delete({
+            const reactionRemoved = await this.prisma.reaction.delete({
                 where: {
                     postId_userId: {
                         postId: postId,
@@ -1507,7 +1707,7 @@ export class ReactionService {
             };
         }
 
-        const reaction = await this.prismaService.prisma.reaction.create({
+        const reaction = await this.prisma.reaction.create({
             data: {
                 type: type,
                 userId: userId,
@@ -1551,7 +1751,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class SubjectService {
-    constructor(private readonly prismaService: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) {}
 
     async seedSubjects() {
         const SUBJECTS = [
@@ -1598,7 +1798,7 @@ export class SubjectService {
         ]
 
         for(const subject of SUBJECTS) {
-            await this.prismaService.prisma.subject.upsert({
+            await this.prisma.prisma.subject.upsert({
                 where: { slug: subject.slug },
                 update: { name: subject.name},
                 create: subject
@@ -1670,11 +1870,10 @@ import { CreateUsersDto } from './create-users.dto';
 
 @Injectable()
 export class UsersService {
-    constructor(private readonly prismaService: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(dto: CreateUsersDto) {
-
-        const usernameExists = await this.prismaService.prisma.user.findUnique({
+        const usernameExists = await this.prisma.user.findUnique({
             where: {
                 username: dto.username
             }
@@ -1684,7 +1883,7 @@ export class UsersService {
             throw new ConflictException('Este nome de usuário já está cadastrado.');
         }
 
-        const emailExists = await this.prismaService.prisma.user.findUnique({
+        const emailExists = await this.prisma.user.findUnique({
             where: {
                 email: dto.email
             }
@@ -1696,7 +1895,7 @@ export class UsersService {
 
         const passwordHash = await bcrypt.hash(dto.password, 10);
 
-        const user = await this.prismaService.prisma.user.create({
+        const user = await this.prisma.user.create({
             data: {
                 username: dto.username,
                 email: dto.email.toLowerCase(),

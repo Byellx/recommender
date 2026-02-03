@@ -4,11 +4,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class CommentService {
     constructor(
-        private readonly prismaService: PrismaService
+        private readonly prisma: PrismaService
     ) {}
 
     async comment(userId: number, postId: number, content: string, parentId?: number) {
-        const user = await this.prismaService.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: {
                 id: userId
             }
@@ -18,7 +18,7 @@ export class CommentService {
             throw new NotFoundException('O usuário não existe.');
         }
 
-        const post = await this.prismaService.prisma.post.findUnique({
+        const post = await this.prisma.post.findUnique({
             where: {
                 id: postId
             }
@@ -29,7 +29,7 @@ export class CommentService {
         }
 
         if(parentId) {
-            const parent = await this.prismaService.prisma.comment.findUnique({
+            const parent = await this.prisma.comment.findUnique({
                 where: { id: parentId }
             });
 
@@ -38,7 +38,7 @@ export class CommentService {
             if(!(parent.postId == postId)) throw new BadRequestException("O comentário pai não pertence ao post.");
         }
 
-        const comment = await this.prismaService.prisma.comment.create({
+        const comment = await this.prisma.comment.create({
             data: {
                 userId: userId,
                 postId: postId,
@@ -57,7 +57,7 @@ export class CommentService {
     }
 
     async findByPost(postId: number) {
-        return this.prismaService.prisma.comment.findMany({
+        return this.prisma.comment.findMany({
             where: {
                 postId: postId
             },
@@ -71,13 +71,13 @@ export class CommentService {
     }
 
     async update(commentId: number, content: string, userId: number) {
-        const comment = await this.prismaService.prisma.comment.findUnique({
+        const comment = await this.prisma.comment.findUnique({
             where: { id: commentId}
         });
 
         if(!comment) throw new NotFoundException("O comentário não existe.");
 
-        const user = await this.prismaService.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: { id: userId }
         });
 
@@ -85,7 +85,7 @@ export class CommentService {
 
         if(comment.userId != userId) throw new ForbiddenException("O usuário não pode editar este comentário.");
 
-        const commentUpdated = await this.prismaService.prisma.comment.update({
+        const commentUpdated = await this.prisma.comment.update({
             where: { id: commentId },
             data: { content: content }
         });
@@ -95,13 +95,13 @@ export class CommentService {
     }
 
     async remove(commentId: number, userId: number) {
-        const comment = await this.prismaService.prisma.comment.findUnique({
+        const comment = await this.prisma.comment.findUnique({
             where: { id: commentId}
         });
 
         if(!comment) throw new NotFoundException("O comentário não existe.");
 
-        const user = await this.prismaService.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: { id: userId }
         });
 
@@ -109,7 +109,7 @@ export class CommentService {
 
         if(comment.userId != userId) throw new ForbiddenException("O usuário não pode deletar o comentário.");
 
-        const commentRemoved = await this.prismaService.prisma.comment.delete({
+        const commentRemoved = await this.prisma.comment.delete({
             where: { id: commentId }
         });
 

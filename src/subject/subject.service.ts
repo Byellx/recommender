@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class SubjectService {
-    constructor(private readonly prismaService: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) {}
 
     async seedSubjects() {
         const SUBJECTS = [
@@ -50,7 +50,7 @@ export class SubjectService {
         ]
 
         for(const subject of SUBJECTS) {
-            await this.prismaService.prisma.subject.upsert({
+            await this.prisma.subject.upsert({
                 where: { slug: subject.slug },
                 update: { name: subject.name},
                 create: subject

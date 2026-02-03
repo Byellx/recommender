@@ -5,11 +5,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class ReactionService {
     constructor(
-        private readonly prismaService: PrismaService
+        private readonly prisma: PrismaService
     ) {}
 
     async create(userId: number, postId: number, type: ReactionType) {
-        const user = await this.prismaService.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: {
                 id: userId
             }
@@ -19,7 +19,7 @@ export class ReactionService {
             throw new NotFoundException('O usuário não existe.');
         }
 
-        const post = await this.prismaService.prisma.post.findUnique({
+        const post = await this.prisma.post.findUnique({
             where: {
                 id: postId
             }
@@ -29,7 +29,7 @@ export class ReactionService {
             throw new NotFoundException("O post não existe.");
         }
 
-        const reactionAlreadyExists = await this.prismaService.prisma.reaction.findUnique({
+        const reactionAlreadyExists = await this.prisma.reaction.findUnique({
             where: {
                 postId_userId: {
                     postId: postId,
@@ -39,7 +39,7 @@ export class ReactionService {
         });
 
         if(reactionAlreadyExists) {
-            const reactionRemoved = await this.prismaService.prisma.reaction.delete({
+            const reactionRemoved = await this.prisma.reaction.delete({
                 where: {
                     postId_userId: {
                         postId: postId,
@@ -54,7 +54,7 @@ export class ReactionService {
             };
         }
 
-        const reaction = await this.prismaService.prisma.reaction.create({
+        const reaction = await this.prisma.reaction.create({
             data: {
                 type: type,
                 userId: userId,
