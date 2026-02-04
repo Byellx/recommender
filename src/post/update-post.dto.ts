@@ -1,28 +1,24 @@
-import { 
-    IsNotEmpty,
+import {
     IsString,
     Length,
     IsInt,
     Min,
+    IsOptional,
 } from "class-validator";
-import { PostStatus } from "generated/prisma/enums";
 
 export class UpdatePostDto {
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
     @Length(3, 200)
-    title: string
+    title?: string
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
     @Length(3, 1000)
-    content: string
+    content?: string
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsInt()
     @Min(1)
-    subjectId: number
-    
-    @IsNotEmpty()
-    status: PostStatus
+    subjectId?: number
 }

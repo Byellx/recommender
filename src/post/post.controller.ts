@@ -65,10 +65,10 @@ export class PostController {
 
     @UseGuards(AuthGuard("jwt"))
     @Delete(":postId")
-    delete(
+    remove(
         @Param("postId", ParseIntPipe) postId: number,
         @CurrentUser() user: CurrentUserType
     ){
-        return this.postService.delete(postId, user.id);
+        return this.postService.remove(postId, user.id);
     }
 }

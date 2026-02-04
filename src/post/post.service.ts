@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreatePostDto } from './create-post.dto';
 import { UpdatePostDto } from './update-post.dto';
@@ -104,20 +104,26 @@ export class PostService {
     }
 
     async update(postId: number, userId: number, dto: UpdatePostDto) {
+        if(dto.title     === undefined && 
+           dto.content   === undefined && 
+           dto.subjectId === undefined) throw new BadRequestException('Nada para atualizar.');
+
         const post = await this.postExists(postId);
 
         await this.userExists(userId);
 
         this.assertOwner(post.authorId, userId);
 
+        if(post.status === PostStatus.ARCHIVED) throw new ForbiddenException('Post arquivado não pode ser editado.');
+
         if(dto.subjectId != null) await this.subjectExists(dto.subjectId);
 
         return this.prisma.post.update({
             where: { id: postId },
             data: {
-                title: dto.title,
-                content: dto.content,
-                subjectId: dto.subjectId
+                ...(dto.title !== undefined && { title: dto.title }),
+                ...(dto.content !== undefined && { content: dto.content }),
+                ...(dto.subjectId !== undefined && { subjectId: dto.subjectId })
             },
             select: this.ownerSelect
         });
@@ -162,7 +168,7 @@ export class PostService {
         });
     }
 
-    async delete(postId: number, userId: number) {
+    async remove(postId: number, userId: number) {
         const post = await this.postExists(postId);
 
         await this.userExists(userId);
@@ -175,33 +181,48 @@ export class PostService {
     }
 
     async feed(userId?: number){
-        if(userId) await this.userExists(userId)
+        if(userId) await this.userExists(userId);
 
-        return this.prisma.post.findMany({
+        const posts = this.prisma.post.findMany({
             where: {
-                status: PostStatus.PUBLISHED
+                status: PostStatus.PUBLISHED,
+                publishedAt: { not: null }
             },
             orderBy: {
                 publishedAt: 'desc'
             },
             select: {
+                id: true,
                 title: true,
                 content: true,
                 author: { select: { username: true }},
                 subject: { select: { name: true }},
                 publishedAt: true,
-                reactions: userId ? {
-                    where: { userId: userId },
-                    select: { id: true }
-                } : false,
-
                 _count: {
                     select: {
                         comments: true,
                         reactions: true
                     }
-                }
-            }
+                },
+                ...(userId && {
+                    reactions: {
+                        where: { userId: userId },
+                        select: { id: true }
+                    }
+                })
+            } as any
         });
+
+        return (await posts).map((post: any) => ({
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            author: post.author,
+            subject: post.subject,
+            publishedAt: post.publishedAt,
+            commentsCount: post._count.comments,
+            reactionsCount: post._count.reactions,
+            likedByMe: userId ? (post.reactions?.length ?? 0) : false
+        }));
     }
 }
