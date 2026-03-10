@@ -7,11 +7,11 @@ export class CreateUsersDto {
     @Matches(/^(?![._])[a-z0-9._]+(?<![._])$/, {
         message: 'Username must be 3–20 characters, lowercase letters, numbers, dot or underscore, and cannot start or end with dot or underscore',
     })
-    username: string;
+    username!: string;
 
     @IsEmail()
     @IsNotEmpty()
-    email: string;
+    email!: string;
 
     @IsString()
     @IsNotEmpty()
@@ -19,5 +19,5 @@ export class CreateUsersDto {
     @Matches(/^(?!\s)(?!.*\s$)[\p{L}\p{N}\p{P}\p{S}\s]+$/u, {
         message: 'Password must not start or end with spaces and must contain valid characters',
     })
-    password: string;
+    password!: string;
 }

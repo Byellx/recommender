@@ -222,7 +222,7 @@ export class PostService {
             publishedAt: post.publishedAt,
             commentsCount: post._count.comments,
             reactionsCount: post._count.reactions,
-            likedByMe: userId ? (post.reactions?.length ?? 0) : false
+            likedByMe: !!(userId && post.reactions?.length)
         }));
     }
 }

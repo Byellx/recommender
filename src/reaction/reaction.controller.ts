@@ -1,8 +1,9 @@
-import { Body, Controller, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
 import { CreateReactionDto } from './create-reaction.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { ReactionType } from 'generated/prisma/enums';
 import { ReactionService } from './reaction.service';
+import { CurrentUser } from 'src/utils/decorators/current-user.decorator';
+import type CurrentUserType from 'src/utils/types/current-user.type';
 
 @Controller('reaction')
 export class ReactionController {
@@ -13,8 +14,8 @@ export class ReactionController {
     create(
         @Param('postId', ParseIntPipe) postId: number,
         @Body() dto: CreateReactionDto,
-        @Req() req: any
+        @CurrentUser() user: CurrentUserType
     ){
-        return this.reactionService.create(req.user.id, postId, dto.type);
+        return this.reactionService.create(user.id, postId, dto.type);
     }
 }

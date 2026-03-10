@@ -4,15 +4,15 @@ export class CreatePostDto {
     @IsNotEmpty()
     @IsString()
     @Length(3, 200)
-    title: string
+    title!: string
 
     @IsNotEmpty()
     @IsString()
     @Length(3, 1000)
-    content: string
+    content!: string
 
     @IsNotEmpty()
     @IsInt()
     @Min(1)
-    subjectId: number
+    subjectId!: number
 }

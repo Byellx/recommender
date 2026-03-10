@@ -69,6 +69,7 @@ src/auth/jwt.strategy.ts
 src/comment/comment.controller.ts
 src/comment/comment.module.ts
 src/comment/comment.service.ts
+src/comment/create-comment.dto.ts
 src/main.ts
 src/post/create-post.dto.ts
 src/post/post.controller.ts
@@ -98,6 +99,17 @@ tsconfig.json
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/comment/create-comment.dto.ts">
+import { IsNotEmpty, Length } from "class-validator"
+
+export class CreateCommentDto {
+    @IsNotEmpty()
+    @Length(1, 1000)
+    content!: string
+    parentId?: number
+}
+</file>
 
 <file path=".gitignore">
 # compiled output
@@ -773,9 +785,12 @@ export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
 </file>
 
 <file path="src/comment/comment.controller.ts">
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from 'src/utils/decorators/current-user.decorator';
+import type CurrentUserType from 'src/utils/types/current-user.type';
+import { CreateCommentDto } from './create-comment.dto';
 
 @Controller('comment')
 export class CommentController {
@@ -785,10 +800,10 @@ export class CommentController {
     @Post(":postId")
     comment(
         @Param("postId", ParseIntPipe) postId: number,
-        @Body() comment: string,
-        @Req() req: any
+        @Body() dto: CreateCommentDto,
+        @CurrentUser() user: CurrentUserType
     ) {
-        return this.commentService.comment(req.user.id, postId, comment);
+        return this.commentService.comment(user.id, postId, dto.content);
     }
 
     @UseGuards(AuthGuard("jwt"))
@@ -800,22 +815,22 @@ export class CommentController {
     }
     
     @UseGuards(AuthGuard("jwt"))
-    @Put(":commentId")
+    @Patch(":commentId")
     update(
         @Param("commentId", ParseIntPipe) commentId: number,
-        @Body() content: string,
-        @Req() req: any
+        @Body() dto: CreateCommentDto,
+        @CurrentUser() user: CurrentUserType
     ){
-        return this.commentService.update(commentId, content, req.user.id)
+        return this.commentService.update(commentId, dto.content, user.id)
     }
     
     @UseGuards(AuthGuard("jwt"))
     @Delete(":commentId")
     remove(
         @Param("commentId", ParseIntPipe) commentId: number,
-        @Req() req: any
+        @CurrentUser() user: CurrentUserType
     ){
-        return this.commentService.remove(commentId, req.user.id);
+        return this.commentService.remove(commentId, user.id);
     }
 }
 </file>
@@ -861,17 +876,17 @@ export class CreatePostDto {
     @IsNotEmpty()
     @IsString()
     @Length(3, 200)
-    title: string
+    title!: string
 
     @IsNotEmpty()
     @IsString()
     @Length(3, 1000)
-    content: string
+    content!: string
 
     @IsNotEmpty()
     @IsInt()
     @Min(1)
-    subjectId: number
+    subjectId!: number
 }
 </file>
 
@@ -906,16 +921,17 @@ import { ReactionType } from "generated/prisma/enums";
 export class CreateReactionDto {
     @IsNotEmpty()
     @IsEnum(ReactionType)
-    type: ReactionType
+    type!: ReactionType
 }
 </file>
 
 <file path="src/reaction/reaction.controller.ts">
-import { Body, Controller, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
 import { CreateReactionDto } from './create-reaction.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { ReactionType } from 'generated/prisma/enums';
 import { ReactionService } from './reaction.service';
+import { CurrentUser } from 'src/utils/decorators/current-user.decorator';
+import type CurrentUserType from 'src/utils/types/current-user.type';
 
 @Controller('reaction')
 export class ReactionController {
@@ -926,9 +942,9 @@ export class ReactionController {
     create(
         @Param('postId', ParseIntPipe) postId: number,
         @Body() dto: CreateReactionDto,
-        @Req() req: any
+        @CurrentUser() user: CurrentUserType
     ){
-        return this.reactionService.create(req.user.id, postId, dto.type);
+        return this.reactionService.create(user.id, postId, dto.type);
     }
 }
 </file>
@@ -977,11 +993,11 @@ export class CreateUsersDto {
     @Matches(/^(?![._])[a-z0-9._]+(?<![._])$/, {
         message: 'Username must be 3–20 characters, lowercase letters, numbers, dot or underscore, and cannot start or end with dot or underscore',
     })
-    username: string;
+    username!: string;
 
     @IsEmail()
     @IsNotEmpty()
-    email: string;
+    email!: string;
 
     @IsString()
     @IsNotEmpty()
@@ -989,7 +1005,7 @@ export class CreateUsersDto {
     @Matches(/^(?!\s)(?!.*\s$)[\p{L}\p{N}\p{P}\p{S}\s]+$/u, {
         message: 'Password must not start or end with spaces and must contain valid characters',
     })
-    password: string;
+    password!: string;
 }
 </file>
 
@@ -1302,10 +1318,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         configService: ConfigService,
         private prisma: PrismaService
     ) {
+        const secret = configService.getOrThrow<string>('JWT_SECRET');
+        if(secret) throw new Error('JWT_SECRET is not set.');
+
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: configService.get<string>('JWT_SECRET') || ''
+            secretOrKey: secret
         });
     }
 
@@ -1450,6 +1469,223 @@ export class CommentService {
         });
 
         return commentRemoved;
+    }
+}
+</file>
+
+<file path="src/prisma/prisma.service.ts">
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import 'dotenv/config';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from 'generated/prisma/client';
+
+@Injectable()
+export class PrismaService
+extends PrismaClient
+implements OnModuleInit, OnModuleDestroy {
+    public prisma: PrismaClient
+    
+    constructor(){
+        const connectionString = process.env.DATABASE_URL!;
+        const adapter = new PrismaPg({connectionString});
+        
+        super({adapter});
+    }
+
+    async onModuleInit() {
+        await this.$connect();
+    }
+
+    async onModuleDestroy() {
+        await this.$disconnect();
+    }
+}
+</file>
+
+<file path="src/reaction/reaction.service.ts">
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { ReactionType } from 'generated/prisma/enums';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+@Injectable()
+export class ReactionService {
+    constructor(
+        private readonly prisma: PrismaService
+    ) {}
+
+    async create(userId: number, postId: number, type: ReactionType) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                id: userId
+            }
+        });
+
+        if(!user) {
+            throw new NotFoundException('O usuário não existe.');
+        }
+
+        const post = await this.prisma.post.findUnique({
+            where: {
+                id: postId
+            }
+        });
+
+        if(!post) {
+            throw new NotFoundException("O post não existe.");
+        }
+
+        const reactionAlreadyExists = await this.prisma.reaction.findUnique({
+            where: {
+                postId_userId: {
+                    postId: postId,
+                    userId: userId
+                }
+            }
+        });
+
+        if(reactionAlreadyExists) {
+            const reactionRemoved = await this.prisma.reaction.delete({
+                where: {
+                    postId_userId: {
+                        postId: postId,
+                        userId: userId
+                    }
+                }
+            });
+
+            return {
+                operation: "UNLIKE",
+                reaction: reactionRemoved
+            };
+        }
+
+        const reaction = await this.prisma.reaction.create({
+            data: {
+                type: type,
+                userId: userId,
+                postId: postId
+            }
+        });
+
+        return {
+            operation: "LIKE",
+            reaction: reaction
+        }
+    }
+}
+</file>
+
+<file path="src/subject/subject.service.ts">
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+@Injectable()
+export class SubjectService {
+    constructor(private readonly prisma: PrismaService) {}
+
+    async seedSubjects() {
+        const SUBJECTS = [
+            {
+                name: 'Entretenimento',
+                slug: 'entertainment'
+            },
+            {
+                name: 'Finanças',
+                slug: 'finances'
+            },
+            {
+                name: 'Saúde',
+                slug: 'health'
+            },
+            {
+                name: 'Estilo de vida',
+                slug: 'lifestyle'
+            },
+            {
+                name: 'Notícias',
+                slug: 'news'
+            },
+            {
+                name: 'Política',
+                slug: 'politics'
+            },
+            {
+                name: 'Religião',
+                slug: 'religion'
+            },
+            {
+                name: 'Ciência',
+                slug: 'science'
+            },
+            {
+                name: 'Tecnologia',
+                slug: 'technology'
+            },
+            {
+                name: 'Educação',
+                slug: 'education'
+            }
+        ]
+
+        for(const subject of SUBJECTS) {
+            await this.prisma.subject.upsert({
+                where: { slug: subject.slug },
+                update: { name: subject.name},
+                create: subject
+            });
+        }
+    }
+}
+</file>
+
+<file path="src/users/users.service.ts">
+import { ConflictException, Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import { CreateUsersDto } from './create-users.dto';
+
+@Injectable()
+export class UsersService {
+    constructor(private readonly prisma: PrismaService) {}
+
+    async create(dto: CreateUsersDto) {
+        const usernameExists = await this.prisma.user.findUnique({
+            where: {
+                username: dto.username
+            }
+        });
+
+        if(usernameExists) {
+            throw new ConflictException('Este nome de usuário já está cadastrado.');
+        }
+
+        const emailExists = await this.prisma.user.findUnique({
+            where: {
+                email: dto.email
+            }
+        });
+
+        if(emailExists) {
+            throw new ConflictException('Este endereço de email já está cadastrado.');
+        }
+
+        const passwordHash = await bcrypt.hash(dto.password, 10);
+
+        const user = await this.prisma.user.create({
+            data: {
+                username: dto.username,
+                email: dto.email.toLowerCase(),
+                passwordHash
+            },
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                createdAt: true
+            }
+        });
+
+        return user;
     }
 }
 </file>
@@ -1756,7 +1992,7 @@ export class PostService {
             publishedAt: post.publishedAt,
             commentsCount: post._count.comments,
             reactionsCount: post._count.reactions,
-            likedByMe: userId ? (post.reactions?.length ?? 0) : false
+            likedByMe: !!(userId && post.reactions?.length)
         }));
     }
 }
@@ -1786,223 +2022,6 @@ export class UpdatePostDto {
     @IsInt()
     @Min(1)
     subjectId?: number
-}
-</file>
-
-<file path="src/prisma/prisma.service.ts">
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import 'dotenv/config';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from 'generated/prisma/client';
-
-@Injectable()
-export class PrismaService
-extends PrismaClient
-implements OnModuleInit, OnModuleDestroy {
-    public prisma: PrismaClient
-    
-    constructor(){
-        const connectionString = process.env.DATABASE_URL!;
-        const adapter = new PrismaPg({connectionString});
-        
-        super({adapter});
-    }
-
-    async onModuleInit() {
-        await this.$connect();
-    }
-
-    async onModuleDestroy() {
-        await this.$disconnect();
-    }
-}
-</file>
-
-<file path="src/reaction/reaction.service.ts">
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { ReactionType } from 'generated/prisma/enums';
-import { PrismaService } from 'src/prisma/prisma.service';
-
-@Injectable()
-export class ReactionService {
-    constructor(
-        private readonly prisma: PrismaService
-    ) {}
-
-    async create(userId: number, postId: number, type: ReactionType) {
-        const user = await this.prisma.user.findUnique({
-            where: {
-                id: userId
-            }
-        });
-
-        if(!user) {
-            throw new NotFoundException('O usuário não existe.');
-        }
-
-        const post = await this.prisma.post.findUnique({
-            where: {
-                id: postId
-            }
-        });
-
-        if(!post) {
-            throw new NotFoundException("O post não existe.");
-        }
-
-        const reactionAlreadyExists = await this.prisma.reaction.findUnique({
-            where: {
-                postId_userId: {
-                    postId: postId,
-                    userId: userId
-                }
-            }
-        });
-
-        if(reactionAlreadyExists) {
-            const reactionRemoved = await this.prisma.reaction.delete({
-                where: {
-                    postId_userId: {
-                        postId: postId,
-                        userId: userId
-                    }
-                }
-            });
-
-            return {
-                operation: "UNLIKE",
-                reaction: reactionRemoved
-            };
-        }
-
-        const reaction = await this.prisma.reaction.create({
-            data: {
-                type: type,
-                userId: userId,
-                postId: postId
-            }
-        });
-
-        return {
-            operation: "LIKE",
-            reaction: reaction
-        }
-    }
-}
-</file>
-
-<file path="src/subject/subject.service.ts">
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-
-@Injectable()
-export class SubjectService {
-    constructor(private readonly prisma: PrismaService) {}
-
-    async seedSubjects() {
-        const SUBJECTS = [
-            {
-                name: 'Entretenimento',
-                slug: 'entertainment'
-            },
-            {
-                name: 'Finanças',
-                slug: 'finances'
-            },
-            {
-                name: 'Saúde',
-                slug: 'health'
-            },
-            {
-                name: 'Estilo de vida',
-                slug: 'lifestyle'
-            },
-            {
-                name: 'Notícias',
-                slug: 'news'
-            },
-            {
-                name: 'Política',
-                slug: 'politics'
-            },
-            {
-                name: 'Religião',
-                slug: 'religion'
-            },
-            {
-                name: 'Ciência',
-                slug: 'science'
-            },
-            {
-                name: 'Tecnologia',
-                slug: 'technology'
-            },
-            {
-                name: 'Educação',
-                slug: 'education'
-            }
-        ]
-
-        for(const subject of SUBJECTS) {
-            await this.prisma.subject.upsert({
-                where: { slug: subject.slug },
-                update: { name: subject.name},
-                create: subject
-            });
-        }
-    }
-}
-</file>
-
-<file path="src/users/users.service.ts">
-import { ConflictException, Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
-import { CreateUsersDto } from './create-users.dto';
-
-@Injectable()
-export class UsersService {
-    constructor(private readonly prisma: PrismaService) {}
-
-    async create(dto: CreateUsersDto) {
-        const usernameExists = await this.prisma.user.findUnique({
-            where: {
-                username: dto.username
-            }
-        });
-
-        if(usernameExists) {
-            throw new ConflictException('Este nome de usuário já está cadastrado.');
-        }
-
-        const emailExists = await this.prisma.user.findUnique({
-            where: {
-                email: dto.email
-            }
-        });
-
-        if(emailExists) {
-            throw new ConflictException('Este endereço de email já está cadastrado.');
-        }
-
-        const passwordHash = await bcrypt.hash(dto.password, 10);
-
-        const user = await this.prisma.user.create({
-            data: {
-                username: dto.username,
-                email: dto.email.toLowerCase(),
-                passwordHash
-            },
-            select: {
-                id: true,
-                username: true,
-                email: true,
-                createdAt: true
-            }
-        });
-
-        return user;
-    }
 }
 </file>
 
